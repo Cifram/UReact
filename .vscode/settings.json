@@ -1,0 +1,13 @@
+﻿{
+  "files.exclude": {
+    "**/.DS_Store":true,
+    "**/.git":true,
+    "**/*.meta":true,
+    "Library/":true,
+    "library/":true,
+    "Obj/":true,
+    "obj/":true,
+    "temp/":true,
+    "Temp/":true
+  }
+}
