@@ -6,14 +6,14 @@ using UnityEngine;
 
 namespace UReact {
 	public class Renderer {
-		private PopulatedObjElem? oldGraph;
+		private PopulatedNodeElem? oldGraph;
 
 		public void Render(NodeElem newGraph) {
 			if (oldGraph == null) {
 				oldGraph = BuildFirstTimeGraph(newGraph, null);
 			} else {
 				// Build dictionaries of new and old elements indexed by key, to diff against
-				var oldElemDict = new Dictionary<string, PopulatedObjElem>();
+				var oldElemDict = new Dictionary<string, PopulatedNodeElem>();
 				var newElemDict = new Dictionary<string, (NodeElem, string?)>();
 				FillOldElemDict(oldElemDict, oldGraph.Value);
 				FillNewElemDict(newElemDict, newGraph);
@@ -50,7 +50,7 @@ namespace UReact {
 				// the elements in the new graph, so by the time those are processed this dictionary
 				// should contain all of the new elements, to allow us to rebuild the graph of
 				// populated elements at the end.
-				var newPopElemDict = new Dictionary<string, PopulatedObjElem>();
+				var newPopElemDict = new Dictionary<string, PopulatedNodeElem>();
 
 				// Execute the creation queue
 				foreach (var (newElem, parentKey) in creationQueue) {
@@ -87,13 +87,13 @@ namespace UReact {
 			}
 		}
 
-		private PopulatedObjElem PopulateGraph(NodeElem baseElem, Dictionary<string, PopulatedObjElem> popElems) {
+		private PopulatedNodeElem PopulateGraph(NodeElem baseElem, Dictionary<string, PopulatedNodeElem> popElems) {
 			var popElem = popElems[baseElem.key];
 			popElem.children = baseElem.children.Select(child => PopulateGraph(child, popElems)).ToArray();
 			return popElem;
 		}
 
-		private void FillOldElemDict(Dictionary<string, PopulatedObjElem> dict, PopulatedObjElem elem) {
+		private void FillOldElemDict(Dictionary<string, PopulatedNodeElem> dict, PopulatedNodeElem elem) {
 			dict[elem.elem.key] = elem;
 			foreach (var child in elem.children) {
 				FillOldElemDict(dict, child);
@@ -110,7 +110,7 @@ namespace UReact {
 			}
 		}
 
-		private PopulatedObjElem BuildFirstTimeGraph(NodeElem elem, PopulatedObjElem? parent) {
+		private PopulatedNodeElem BuildFirstTimeGraph(NodeElem elem, PopulatedNodeElem? parent) {
 			var newElem = elem.Render(null);
 			if (parent != null) {
 				newElem.obj.transform.SetParent(parent.Value.obj.transform, false);
@@ -152,13 +152,13 @@ namespace UReact {
 			return this;
 		}
 
-		public PopulatedObjElem Render(PopulatedObjElem? old) {
+		public PopulatedNodeElem Render(PopulatedNodeElem? old) {
 			if (old == null) {
 				var obj = new GameObject(key);
 				foreach (var compElem in compElems) {
 					compElem.Value.BuildComponent(null, obj);
 				}
-				return new PopulatedObjElem() {
+				return new PopulatedNodeElem() {
 					elem = this,
 					obj = obj,
 				};
@@ -175,7 +175,7 @@ namespace UReact {
 						GameObject.Destroy(old.Value.obj.GetComponent(compElem.Key));
 					}
 				}
-				return new PopulatedObjElem() {
+				return new PopulatedNodeElem() {
 					elem = this,
 					obj = old.Value.obj,
 				};
@@ -201,10 +201,10 @@ namespace UReact {
 		}
 	}
 
-	public struct PopulatedObjElem {
+	public struct PopulatedNodeElem {
 		public NodeElem elem;
 		public GameObject obj;
-		public PopulatedObjElem[] children;
+		public PopulatedNodeElem[] children;
 		public string? parentKey;
 	}
 }
