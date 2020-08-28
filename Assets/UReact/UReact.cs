@@ -69,11 +69,14 @@ namespace UReact {
 				// Execute the move queue
 				// Do this after the creation queue, to make sure the parent objects exist.
 				foreach (var (src, dst) in moveQueue) {
+					var popElem = newPopElemDict[src];
+					popElem.parentKey = dst;
 					if (dst == null) {
-						newPopElemDict[src].obj.transform.SetParent(null);
+						popElem.obj.transform.SetParent(null);
 					} else {
-						newPopElemDict[src].obj.transform.SetParent(newPopElemDict[dst].obj.transform, false);
+						popElem.obj.transform.SetParent(newPopElemDict[dst].obj.transform, false);
 					}
+					newPopElemDict[src] = popElem;
 				}
 				// Execute the destruction queue
 				// Do this last, so we don't inadvertently destroy children that got unparented from
@@ -141,9 +144,9 @@ namespace UReact {
 			this.children = children;
 		}
 
-		public NodeElem Component<PropT>(CompRender<PropT> render, PropT props)
+		public NodeElem Component<PropT>(Type componentType, CompRender<PropT> render, PropT props)
 			where PropT : struct {
-			compElems[typeof(PropT)] = new CompElem<PropT>() { render = render, props = props };
+			compElems[typeof(PropT)] = new CompElem<PropT>(componentType, render, props);
 			return this;
 		}
 
@@ -172,7 +175,7 @@ namespace UReact {
 				}
 				foreach (var compElem in old.Value.elem.compElems) {
 					if (!compElems.ContainsKey(compElem.Key)) {
-						GameObject.Destroy(old.Value.obj.GetComponent(compElem.Key));
+						compElem.Value.RemoveComponent(old.Value.obj);
 					}
 				}
 				return new PopulatedNodeElem() {
@@ -185,19 +188,26 @@ namespace UReact {
 
 	public interface CompElem {
 		void BuildComponent(CompElem? old, GameObject obj);
+		void RemoveComponent(GameObject obj);
 	}
 
 	public struct CompElem<PropT> : CompElem where PropT : struct {
+		public Type componentType;
 		public CompRender<PropT> render;
 		public PropT props;
 
-		public CompElem(CompRender<PropT> render, PropT props) {
+		public CompElem(Type componentType, CompRender<PropT> render, PropT props) {
+			this.componentType = componentType;
 			this.render = render;
 			this.props = props;
 		}
 
 		public void BuildComponent(CompElem? old, GameObject obj) {
 			render(obj, old == null ? (PropT?)null : ((CompElem<PropT>)old).props, props);
+		}
+
+		public void RemoveComponent(GameObject obj) {
+			GameObject.Destroy(obj.GetComponent(componentType));
 		}
 	}
 
