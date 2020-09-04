@@ -134,17 +134,17 @@ namespace UReact {
 		public Dictionary<Type, CompElem> compElems;
 		public List<NodeElem> children;
 		public string key;
+		public bool active;
+		public int layer;
+		public string tag;
 
-		public NodeElem(string key) {
+		public NodeElem(string key, bool active = true, int layer = 0, string tag = "Untagged") {
 			this.key = key;
+			this.active = active;
+			this.layer = layer;
+			this.tag = tag;
 			this.compElems = new Dictionary<Type, CompElem>();
 			this.children = new List<NodeElem>();
-		}
-
-		public NodeElem(string key, List<NodeElem> children) {
-			this.key = key;
-			this.compElems = new Dictionary<Type, CompElem>();
-			this.children = children;
 		}
 
 		public NodeElem Component<PropT>(Type componentType, CompRender<PropT> render, PropT props)
@@ -161,6 +161,9 @@ namespace UReact {
 		public PopulatedNodeElem Render(PopulatedNodeElem? old) {
 			if (old == null) {
 				var obj = new GameObject(key);
+				obj.SetActive(active);
+				obj.layer = layer;
+				obj.tag = tag;
 				foreach (var compElem in compElems) {
 					compElem.Value.BuildComponent(null, obj);
 				}
@@ -169,17 +172,28 @@ namespace UReact {
 					obj = obj,
 				};
 			} else {
-				foreach (var compElem in compElems) {
-					if (old.Value.elem.compElems.ContainsKey(compElem.Key)) {
-						compElem.Value.BuildComponent(old.Value.elem.compElems[compElem.Key], old.Value.obj);
-					} else {
-						compElem.Value.BuildComponent(null, old.Value.obj);
+				if (active) {
+					if (old.Value.elem.layer != layer) {
+						old.Value.obj.layer = layer;
+					}
+					if (old.Value.elem.tag != tag) {
+						old.Value.obj.tag = tag;
+					}
+					foreach (var compElem in compElems) {
+						if (old.Value.elem.compElems.ContainsKey(compElem.Key)) {
+							compElem.Value.BuildComponent(old.Value.elem.compElems[compElem.Key], old.Value.obj);
+						} else {
+							compElem.Value.BuildComponent(null, old.Value.obj);
+						}
+					}
+					foreach (var compElem in old.Value.elem.compElems) {
+						if (!compElems.ContainsKey(compElem.Key)) {
+							compElem.Value.RemoveComponent(old.Value.obj);
+						}
 					}
 				}
-				foreach (var compElem in old.Value.elem.compElems) {
-					if (!compElems.ContainsKey(compElem.Key)) {
-						compElem.Value.RemoveComponent(old.Value.obj);
-					}
+				if (old.Value.elem.active != active) {
+					old.Value.obj.SetActive(active);
 				}
 				return new PopulatedNodeElem() {
 					elem = this,

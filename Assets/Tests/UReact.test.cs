@@ -77,23 +77,58 @@ public class UReactTests {
 		Assert.That(parentNode.children[0].key, Is.EqualTo("child"));
 	}
 
-	[Test]
-	public void NodeElem_Render_FirstTime() {
+	[UnityTest]
+	public IEnumerator NodeElem_Render_FirstTime() {
 		var popNode = new NodeElem(
-			"test"
+			key: "test",
+			layer: 2,
+			tag: "Player",
+			active: true
 		).Component(
 			typeof(TestMonoBehaviour), TestComponent.Render, new TestProps { value = 42 }
 		).Render(null);
+		yield return null;
 		Assert.That(popNode.elem.key, Is.EqualTo("test"));
 		Assert.That(popNode.obj, Is.Not.Null);
 		Assert.That(popNode.obj.name, Is.EqualTo("test"));
+		Assert.That(popNode.obj.layer, Is.EqualTo(2));
+		Assert.That(popNode.obj.tag, Is.EqualTo("Player"));
+		Assert.That(popNode.obj.activeSelf, Is.True);
 		var monoBehaviour = popNode.obj.GetComponent<TestMonoBehaviour>();
 		Assert.That(monoBehaviour, Is.Not.Null);
 		Assert.That(monoBehaviour.value, Is.EqualTo(42));
 	}
 
+	[UnityTest]
+	public IEnumerator NodeElem_Render_SecondTime_NodeChanges() {
+		var oldPopNode = new NodeElem(
+			key: "test",
+			layer: 2,
+			tag: "Player",
+			active: true
+		).Component(
+			typeof(TestMonoBehaviour), TestComponent.Render, new TestProps { value = 42 }
+		).Render(null);
+		var newPopNode = new NodeElem(
+			key: "test",
+			layer: 3,
+			tag: "Untagged",
+			active: false
+		).Component(
+			typeof(TestMonoBehaviour), TestComponent.Render, new TestProps { value = 7 }
+		).Render(oldPopNode);
+		yield return null;
+		Assert.That(newPopNode.obj, Is.Not.Null);
+		Assert.That(newPopNode.obj.layer, Is.EqualTo(2));
+		Assert.That(newPopNode.obj.tag, Is.EqualTo("Player"));
+		Assert.That(newPopNode.obj.activeSelf, Is.False);
+		var monoBehaviour = newPopNode.obj.GetComponent<TestMonoBehaviour>();
+		Assert.That(monoBehaviour, Is.Not.Null);
+		Assert.That(monoBehaviour.value, Is.EqualTo(42));
+	}
+
 	[Test]
-	public void NodeElem_Render_SecondTime_OnlyPropChanges() {
+	public void NodeElem_Render_SecondTime_PropChanges() {
 		var oldPopNode = new NodeElem(
 			"test"
 		).Component(
