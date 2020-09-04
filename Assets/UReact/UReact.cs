@@ -52,19 +52,22 @@ namespace UReact {
 				// populated elements at the end.
 				var newPopElemDict = new Dictionary<string, PopulatedNodeElem>();
 
-				// Execute the creation queue
-				foreach (var (newElem, parentKey) in creationQueue) {
-					var popElem = newElem.Render(null);
-					if (parentKey != null) {
-						popElem.obj.transform.SetParent(newPopElemDict[parentKey].obj.transform, false);
-					}
-					newPopElemDict[popElem.elem.key] = popElem;
-				}
 				// Execute the update queue
 				foreach (var updateKey in updateQueue) {
 					var oldElem = oldElemDict[updateKey];
 					(var newElem, _) = newElemDict[updateKey];
 					newPopElemDict[updateKey] = newElem.Render(oldElem);
+				}
+				// Execute the creation queue
+				// Do this after the update queue to make sure that any new node's parent nodes are
+				// already in the newPopElemDict.
+				foreach (var (newElem, parentKey) in creationQueue) {
+					var popElem = newElem.Render(null);
+					if (parentKey != null) {
+						popElem.obj.transform.SetParent(newPopElemDict[parentKey].obj.transform, false);
+						popElem.parentKey = parentKey;
+					}
+					newPopElemDict[popElem.elem.key] = popElem;
 				}
 				// Execute the move queue
 				// Do this after the creation queue, to make sure the parent objects exist.

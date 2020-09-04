@@ -132,6 +132,24 @@ public class UReactTests {
 	[UnityTest]
 	public IEnumerator Renderer_Render() {
 		var renderer = new UReact.Renderer();
+		GameObject obj1, obj2;
+		TestMonoBehaviour comp1;
+		Test2MonoBehaviour comp2;
+
+		renderer.Render(new NodeElem(
+			"node1"
+		).Component(
+			typeof(TestMonoBehaviour),
+			TestComponent.Render,
+			new TestProps { value = 42 }
+		));
+
+		obj1 = GameObject.Find("node1");
+		Assert.That(obj1, Is.Not.Null);
+		comp1 = obj1.GetComponent<TestMonoBehaviour>();
+		Assert.That(comp1, Is.Not.Null);
+		Assert.That(comp1.value, Is.EqualTo(42));
+
 		renderer.Render(new NodeElem(
 			"node1"
 		).Component(
@@ -148,15 +166,8 @@ public class UReactTests {
 			)
 		));
 
-		GameObject obj1, obj2;
-		TestMonoBehaviour comp1;
-		Test2MonoBehaviour comp2;
-
 		obj1 = GameObject.Find("node1");
 		Assert.That(obj1, Is.Not.Null);
-		comp1 = obj1.GetComponent<TestMonoBehaviour>();
-		Assert.That(comp1, Is.Not.Null);
-		Assert.That(comp1.value, Is.EqualTo(42));
 		Assert.That(obj1.transform.childCount, Is.EqualTo(1));
 		obj2 = obj1.transform.GetChild(0).gameObject;
 		Assert.That(obj2, Is.Not.Null);
