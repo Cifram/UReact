@@ -93,6 +93,19 @@ namespace UReact {
 			}
 		}
 
+		public void Clear() {
+			if (oldGraph != null) {
+				GameObject.Destroy(oldGraph.Value.obj);
+			}
+		}
+
+		public bool IsInSceneGraph(GameObject obj) {
+			if (oldGraph == null) {
+				return false;
+			}
+			return oldGraph.Value.obj == obj || obj.transform.IsChildOf(oldGraph.Value.obj.transform);
+		}
+
 		private PopulatedNodeElem PopulateGraph(NodeElem baseElem, Dictionary<string, PopulatedNodeElem> popElems) {
 			var popElem = popElems[baseElem.key];
 			popElem.children = baseElem.children.Select(child => PopulateGraph(child, popElems)).ToArray();
@@ -147,9 +160,8 @@ namespace UReact {
 			this.children = new List<NodeElem>();
 		}
 
-		public NodeElem Component<PropT>(Type componentType, CompRender<PropT> render, PropT props)
-			where PropT : struct {
-			compElems[typeof(PropT)] = new CompElem<PropT>(componentType, render, props);
+		public NodeElem Component<CompT>(CompT component) where CompT : struct, Component {
+			compElems[typeof(CompT)] = new CompElem<CompT>(component);
 			return this;
 		}
 
@@ -203,28 +215,38 @@ namespace UReact {
 		}
 	}
 
+	public interface Component {
+		void Render(GameObject obj, Component? oldComp);
+		Type[] GetManagedBehaviourTypes();
+	}
+
 	public interface CompElem {
 		void BuildComponent(CompElem? old, GameObject obj);
 		void RemoveComponent(GameObject obj);
 	}
 
-	public struct CompElem<PropT> : CompElem where PropT : struct {
-		public Type componentType;
-		public CompRender<PropT> render;
-		public PropT props;
+	public struct CompElem<CompT> : CompElem where CompT : struct, Component {
+		public CompT component;
 
-		public CompElem(Type componentType, CompRender<PropT> render, PropT props) {
-			this.componentType = componentType;
-			this.render = render;
-			this.props = props;
+		public CompElem(CompT component) {
+			this.component = component;
 		}
 
 		public void BuildComponent(CompElem? old, GameObject obj) {
-			render(obj, old == null ? (PropT?)null : ((CompElem<PropT>)old).props, props);
+			component.Render(obj, old == null ? (Component?)null : ((CompElem<CompT>)old).component);
 		}
 
 		public void RemoveComponent(GameObject obj) {
-			GameObject.Destroy(obj.GetComponent(componentType));
+			var behaviours = component.GetManagedBehaviourTypes();
+			foreach (var type in behaviours) {
+				if (type == typeof(Transform)) {
+					obj.transform.localPosition = Vector3.zero;
+					obj.transform.localRotation = Quaternion.identity;
+					obj.transform.localScale = Vector3.one;
+				} else {
+					GameObject.Destroy(obj.GetComponent(type));
+				}
+			}
 		}
 	}
 

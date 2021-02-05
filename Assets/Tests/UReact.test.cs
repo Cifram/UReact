@@ -1,4 +1,5 @@
 #nullable enable
+using System;
 using System.Collections;
 using NUnit.Framework;
 using UnityEngine;
@@ -9,17 +10,23 @@ class TestMonoBehaviour : MonoBehaviour {
 	public int value;
 }
 
-struct TestProps {
-	public int value;
-}
+struct TestComponent : UReact.Component {
+	private int value;
 
-static class TestComponent {
-	public static void Render(GameObject obj, TestProps? oldProps, TestProps props) {
+	public TestComponent(int value) {
+		this.value = value;
+	}
+
+	public void Render(GameObject obj, UReact.Component? oldProps) {
 		if (oldProps == null) {
-			obj.AddComponent<TestMonoBehaviour>().value = props.value;
+			obj.AddComponent<TestMonoBehaviour>().value = value;
 		} else {
-			obj.GetComponent<TestMonoBehaviour>().value = props.value;
+			obj.GetComponent<TestMonoBehaviour>().value = value;
 		}
+	}
+
+	public Type[] GetManagedBehaviourTypes() {
+		return new Type[] { typeof(TestMonoBehaviour) };
 	}
 }
 
@@ -27,25 +34,31 @@ class Test2MonoBehaviour : MonoBehaviour {
 	public string? value;
 }
 
-struct Test2Props {
-	public string value;
-}
+struct Test2Component : UReact.Component {
+	private string value;
 
-static class Test2Component {
-	public static void Render(GameObject obj, Test2Props? oldProps, Test2Props props) {
-		if (oldProps == null) {
-			obj.AddComponent<Test2MonoBehaviour>().value = props.value;
+	public Test2Component(string value) {
+		this.value = value;
+	}
+
+	public void Render(GameObject obj, UReact.Component? oldComp) {
+		if (oldComp == null) {
+			obj.AddComponent<Test2MonoBehaviour>().value = value;
 		} else {
-			obj.GetComponent<Test2MonoBehaviour>().value = props.value;
+			obj.GetComponent<Test2MonoBehaviour>().value = value;
 		}
+	}
+
+	public Type[] GetManagedBehaviourTypes() {
+		return new Type[] { typeof(Test2MonoBehaviour) };
 	}
 }
 
 public class UReactTests {
 	[UnityTest]
 	public IEnumerator CompElem() {
-		CompElem compElem1 = new CompElem<TestProps>(typeof(TestMonoBehaviour), TestComponent.Render, new TestProps { value = 42 });
-		CompElem compElem2 = new CompElem<TestProps>(typeof(TestMonoBehaviour), TestComponent.Render, new TestProps { value = 7 });
+		CompElem compElem1 = new CompElem<TestComponent>(new TestComponent(value: 42));
+		CompElem compElem2 = new CompElem<TestComponent>(new TestComponent(value: 7));
 		var obj = new GameObject();
 
 		compElem1.BuildComponent(null, obj);
@@ -62,9 +75,9 @@ public class UReactTests {
 	[Test]
 	public void NodeElem_Component() {
 		var nodeElem = new NodeElem("test");
-		Assert.That(nodeElem.compElems.ContainsKey(typeof(TestProps)), Is.False);
-		nodeElem.Component(typeof(TestMonoBehaviour), TestComponent.Render, new TestProps { value = 42 });
-		Assert.That(nodeElem.compElems.ContainsKey(typeof(TestProps)), Is.True);
+		Assert.That(nodeElem.compElems.ContainsKey(typeof(TestComponent)), Is.False);
+		nodeElem.Component(new TestComponent(value: 42));
+		Assert.That(nodeElem.compElems.ContainsKey(typeof(TestComponent)), Is.True);
 	}
 
 	[Test]
@@ -85,7 +98,7 @@ public class UReactTests {
 			tag: "Player",
 			active: true
 		).Component(
-			typeof(TestMonoBehaviour), TestComponent.Render, new TestProps { value = 42 }
+			new TestComponent(value: 42)
 		).Render(null);
 		yield return null;
 		Assert.That(popNode.elem.key, Is.EqualTo("test"));
@@ -107,7 +120,7 @@ public class UReactTests {
 			tag: "Player",
 			active: true
 		).Component(
-			typeof(TestMonoBehaviour), TestComponent.Render, new TestProps { value = 42 }
+			new TestComponent(value: 42)
 		).Render(null);
 		var newPopNode = new NodeElem(
 			key: "test",
@@ -115,7 +128,7 @@ public class UReactTests {
 			tag: "Untagged",
 			active: false
 		).Component(
-			typeof(TestMonoBehaviour), TestComponent.Render, new TestProps { value = 7 }
+			new TestComponent(value: 7)
 		).Render(oldPopNode);
 		yield return null;
 		Assert.That(newPopNode.obj, Is.Not.Null);
@@ -132,12 +145,12 @@ public class UReactTests {
 		var oldPopNode = new NodeElem(
 			"test"
 		).Component(
-			typeof(TestMonoBehaviour), TestComponent.Render, new TestProps { value = 42 }
+			new TestComponent(value: 42)
 		).Render(null);
 		var newPopNode = new NodeElem(
 			"test"
 		).Component(
-			typeof(TestMonoBehaviour), TestComponent.Render, new TestProps { value = 7 }
+			new TestComponent(value: 7)
 		).Render(oldPopNode);
 		var monoBehaviour = newPopNode.obj.GetComponent<TestMonoBehaviour>();
 		Assert.That(monoBehaviour, Is.Not.Null);
@@ -149,12 +162,12 @@ public class UReactTests {
 		var oldPopNode = new NodeElem(
 			"test"
 		).Component(
-			typeof(TestMonoBehaviour), TestComponent.Render, new TestProps { value = 42 }
+			new TestComponent(value: 42)
 		).Render(null);
 		var newPopNode = new NodeElem(
 			"test"
 		).Component(
-			typeof(Test2MonoBehaviour), Test2Component.Render, new Test2Props { value = "foo" }
+			new Test2Component(value: "foo")
 		).Render(oldPopNode);
 		yield return null;
 		var test1Behaviour = newPopNode.obj.GetComponent<TestMonoBehaviour>();
@@ -174,9 +187,7 @@ public class UReactTests {
 		renderer.Render(new NodeElem(
 			"node1"
 		).Component(
-			typeof(TestMonoBehaviour),
-			TestComponent.Render,
-			new TestProps { value = 42 }
+			new TestComponent(value: 42)
 		));
 
 		obj1 = GameObject.Find("node1");
@@ -188,16 +199,12 @@ public class UReactTests {
 		renderer.Render(new NodeElem(
 			"node1"
 		).Component(
-			typeof(TestMonoBehaviour),
-			TestComponent.Render,
-			new TestProps { value = 42 }
+			new TestComponent(value: 42)
 		).Child(
 			new NodeElem(
 				"node2"
 			).Component(
-				typeof(Test2MonoBehaviour),
-				Test2Component.Render,
-				new Test2Props { value = "foo" }
+				new Test2Component(value: "foo")
 			)
 		));
 
@@ -214,16 +221,12 @@ public class UReactTests {
 		renderer.Render(new NodeElem(
 			"node2"
 		).Component(
-			typeof(Test2MonoBehaviour),
-			Test2Component.Render,
-			new Test2Props { value = "bar" }
+			new Test2Component(value: "bar")
 		).Child(
 			new NodeElem(
 				"node1"
 			).Component(
-				typeof(TestMonoBehaviour),
-				TestComponent.Render,
-				new TestProps { value = 42 }
+				new TestComponent(value: 42)
 			)
 		));
 
@@ -243,9 +246,7 @@ public class UReactTests {
 		renderer.Render(new NodeElem(
 			"node1"
 		).Component(
-			typeof(Test2MonoBehaviour),
-			Test2Component.Render,
-			new Test2Props { value = "bar" }
+			new Test2Component(value: "bar")
 		));
 		yield return null;
 

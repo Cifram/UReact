@@ -3,30 +3,35 @@ using System;
 using UnityEngine;
 
 namespace UReact {
-	public struct MeshFilterProps {
-		public Mesh mesh;
-		public Func<Mesh> meshConstructor;
-	}
+	public struct MeshFilterComponent : Component {
+		private Mesh? mesh;
+		private Func<Mesh>? meshConstructor;
 
-	public static class MeshFilterComponent {
-		public static void Render(GameObject obj, MeshFilterProps? oldProps, MeshFilterProps props) {
-			if (oldProps == null) {
+		public MeshFilterComponent(Mesh? mesh = null, Func<Mesh>? meshConstructor = null) {
+			this.mesh = mesh;
+			this.meshConstructor = meshConstructor;
+		}
+
+		public void Render(GameObject obj, Component? oldComp) {
+			if (oldComp == null) {
 				var meshFilter = obj.AddComponent<MeshFilter>();
-				if (props.meshConstructor != null) {
-					meshFilter.mesh = props.meshConstructor();
+				if (meshConstructor != null) {
+					meshFilter.mesh = meshConstructor();
 				} else {
-					meshFilter.mesh = props.mesh;
+					meshFilter.mesh = mesh;
 				}
-			} else {
-				if (!oldProps.Value.Equals(props)) {
-					var meshFilter = obj.GetComponent<MeshFilter>();
-					if (oldProps.Value.meshConstructor == null && props.meshConstructor != null) {
-						meshFilter.mesh = props.meshConstructor();
-					} else if (props.meshConstructor == null && oldProps.Value.mesh != props.mesh) {
-						meshFilter.mesh = props.mesh;
-					}
+			} else if (oldComp is MeshFilterComponent old && !old.Equals(this)) {
+				var meshFilter = obj.GetComponent<MeshFilter>();
+				if (old.meshConstructor == null && meshConstructor != null) {
+					meshFilter.mesh = meshConstructor();
+				} else if (meshConstructor == null && old.mesh != mesh) {
+					meshFilter.mesh = mesh;
 				}
 			}
+		}
+
+		public Type[] GetManagedBehaviourTypes() {
+			return new Type[] { typeof(MeshFilter) };
 		}
 	}
 }

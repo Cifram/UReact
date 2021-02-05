@@ -3,38 +3,37 @@ using System;
 using UnityEngine;
 using UReact;
 
-public struct DraggableProps {
-	public string key;
-	public Vector3 position;
-	public float size;
-	public Action onClick;
-	public Material material;
-	public Mesh mesh;
-}
-
 public static class DraggableNode {
-	public static NodeElem New(DraggableProps props) =>
+	public static NodeElem New(
+		string key,
+		Vector3 position,
+		float size,
+		Action onClick,
+		Material material,
+		Mesh mesh
+	) =>
 		new NodeElem(
-			props.key
+			key
 		).Component(
-			typeof(Transform),
-			TransformComponent.Render,
-			new TransformProps { position = props.position, localScale = Vector3.one * props.size }
+			new TransformComponent(
+				localPosition: position,
+				localScale: Vector3.one * size)
 		).Component(
-			typeof(MeshRenderer),
-			MeshRendererComponent.Render,
-			new MeshRendererProps { material = props.material }
+			new MeshRendererComponent(
+				material: material
+			)
 		).Component(
-			typeof(MeshFilter),
-			MeshFilterComponent.Render,
-			new MeshFilterProps { mesh = props.mesh }
+			new MeshFilterComponent(
+				mesh: mesh
+			)
 		).Component(
-			typeof(BoxCollider),
-			BoxColliderComponent.Render,
-			new BoxColliderProps { center = Vector3.zero, size = Vector3.one * props.size }
+			new BoxColliderComponent(
+				center: Vector3.zero,
+				size: Vector3.one * size
+			)
 		).Component(
-			typeof(Clickable),
-			ClickableComponent.Render,
-			new ClickableProps { onClick = props.onClick }
+			new ClickableComponent(
+				onClick: onClick
+			)
 		);
 }

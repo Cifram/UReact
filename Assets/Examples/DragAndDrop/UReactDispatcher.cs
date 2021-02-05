@@ -33,11 +33,11 @@ public class UReactDispatcher : MonoBehaviour {
 			state.objects[state.heldObject.Value].position = groundPos;
 		}
 
-		ureact.Render(RootNode.New(new RootProps {
-			state = state,
-			material = draggableMaterial ?? throw new Exception("Draggable material is null"),
-			mesh = cubeMesh ?? throw new Exception("Draggable mesh is null"),
-		}));
+		ureact.Render(RootNode.New(
+			state: state,
+			material: draggableMaterial ?? throw new Exception("Draggable material is null"),
+			mesh: cubeMesh ?? throw new Exception("Draggable mesh is null")
+		));
 	}
 
 	private Mesh BuildCubeMesh() {

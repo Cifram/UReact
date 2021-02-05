@@ -3,30 +3,35 @@ using System;
 using UnityEngine;
 
 namespace UReact {
-	public struct MeshColliderProps {
-		public Mesh mesh;
-		public Func<Mesh> meshConstructor;
-	}
+	public struct MeshColliderComponent : Component {
+		private Mesh? mesh;
+		private Func<Mesh>? meshConstructor;
 
-	public static class MeshColliderComponent {
-		public static void Render(GameObject obj, MeshColliderProps? oldProps, MeshColliderProps props) {
-			if (oldProps == null) {
+		public MeshColliderComponent(Mesh? mesh = null, Func<Mesh>? meshConstructor = null) {
+			this.mesh = mesh;
+			this.meshConstructor = meshConstructor;
+		}
+
+		public void Render(GameObject obj, Component? oldComp) {
+			if (oldComp == null) {
 				var meshCollider = obj.AddComponent<MeshCollider>();
-				if (props.meshConstructor != null) {
-					meshCollider.sharedMesh = props.meshConstructor();
+				if (meshConstructor != null) {
+					meshCollider.sharedMesh = meshConstructor();
 				} else {
-					meshCollider.sharedMesh = props.mesh;
+					meshCollider.sharedMesh = mesh;
 				}
-			} else {
-				if (!oldProps.Value.Equals(props)) {
-					var meshCollider = obj.GetComponent<MeshCollider>();
-					if (oldProps.Value.meshConstructor == null && props.meshConstructor != null) {
-						meshCollider.sharedMesh = props.meshConstructor();
-					} else if (props.meshConstructor == null && oldProps.Value.mesh != props.mesh) {
-						meshCollider.sharedMesh = props.mesh;
-					}
+			} else if (oldComp is MeshColliderComponent old && !old.Equals(this)) {
+				var meshCollider = obj.GetComponent<MeshCollider>();
+				if (old.meshConstructor == null && meshConstructor != null) {
+					meshCollider.sharedMesh = meshConstructor();
+				} else if (meshConstructor == null && old.mesh != mesh) {
+					meshCollider.sharedMesh = mesh;
 				}
 			}
+		}
+
+		public Type[] GetManagedBehaviourTypes() {
+			return new Type[] { typeof(MeshCollider) };
 		}
 	}
 }

@@ -2,33 +2,35 @@
 using UnityEngine;
 using UReact;
 
-public struct RootProps {
-	public State.Store state;
-	public Material material;
-	public Mesh mesh;
-}
-
 public static class RootNode {
-	public static NodeElem New(RootProps props) {
+	public static NodeElem New(State.Store state, Material material, Mesh mesh) {
+		// Create an empty node, as a parent object to organize all the draggable objects together
 		var root = new NodeElem("Draggable Objects");
-		foreach (var keyval in props.state.objects) {
+
+		// Iterate through each of the draggables in the state, to make a child node from each
+		foreach (var keyval in state.objects) {
 			var id = keyval.Key;
 			var draggable = keyval.Value;
-			root.Child(DraggableNode.New(new DraggableProps {
-				key = $"Draggable {id}",
-				position = draggable.position,
-				size = draggable.size,
-				onClick = () => {
-					if (props.state.heldObject == null) {
-						props.state.heldObject = id;
-					} else {
-						props.state.heldObject = null;
-					}
-				},
-				material = props.material,
-				mesh = props.mesh,
-			}));
+
+			// Use the `Child` function to add a child to the root node
+			root.Child(
+				DraggableNode.New(
+					key: $"Draggable {id}",
+					position: draggable.position,
+					size: draggable.size,
+					onClick: () => {
+						if (state.heldObject == null) {
+							state.heldObject = id;
+						} else {
+							state.heldObject = null;
+						}
+					},
+					material: material,
+					mesh: mesh
+				)
+			);
 		}
+
 		return root;
 	}
 }

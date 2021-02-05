@@ -3,30 +3,35 @@ using System;
 using UnityEngine;
 
 namespace UReact {
-	public struct MeshRendererProps {
-		public Material? material;
-		public Func<Material>? materialConstructor;
-	}
+	public struct MeshRendererComponent : Component {
+		private Material? material;
+		private Func<Material>? materialConstructor;
 
-	public static class MeshRendererComponent {
-		public static void Render(GameObject obj, MeshRendererProps? oldProps, MeshRendererProps props) {
-			if (oldProps == null) {
+		public MeshRendererComponent(Material? material = null, Func<Material>? materialConstructor = null) {
+			this.material = material;
+			this.materialConstructor = materialConstructor;
+		}
+
+		public void Render(GameObject obj, Component? oldComp) {
+			if (oldComp == null) {
 				var meshRenderer = obj.AddComponent<MeshRenderer>();
-				if (props.materialConstructor != null) {
-					meshRenderer.material = props.materialConstructor();
+				if (materialConstructor != null) {
+					meshRenderer.material = materialConstructor();
 				} else {
-					meshRenderer.material = props.material;
+					meshRenderer.material = material;
 				}
-			} else {
-				if (!oldProps.Value.Equals(props)) {
-					var meshRenderer = obj.GetComponent<MeshRenderer>();
-					if (oldProps.Value.materialConstructor == null && props.materialConstructor != null) {
-						meshRenderer.material = props.materialConstructor();
-					} else if (props.materialConstructor == null && oldProps.Value.material != props.material) {
-						meshRenderer.material = props.material;
-					}
+			} else if (oldComp is MeshRendererComponent old && !old.Equals(this)) {
+				var meshRenderer = obj.GetComponent<MeshRenderer>();
+				if (old.materialConstructor == null && materialConstructor != null) {
+					meshRenderer.material = materialConstructor();
+				} else if (materialConstructor == null && old.material != material) {
+					meshRenderer.material = material;
 				}
 			}
+		}
+
+		public Type[] GetManagedBehaviourTypes() {
+			return new Type[] { typeof(MeshRenderer) };
 		}
 	}
 }

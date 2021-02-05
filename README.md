@@ -28,13 +28,7 @@ That said, there's a lot of room for improvement in UReact's APIs. The library i
 
 ### Wait, isn't React a UI framework? Why are you using it for the scene graph?
 
-It turns out that most UI systems, including HTML, are scene graphs, even if they use the scene graph a little differently.
-
-Game scene graphs are usually (though not always) in 3D, and tend to be shallow with a few root nodes that either have no children or tons of children, and only a few places where the graph goes any deeper than that. The parent-child relationship tends to represent inherited transforms, or just simple organization to group lots of related objects together.
-
-UI scene graphs are usually (though not always) in 2D, with very deep, complicated hierarchies. The parent-child relationship tends to represent nesting, with the idea of the child being "inside" the parent element, which also implies inherited transforms.
-
-None the less, how they're structured is very similar, and they can both benefit from a React-like framework. In fact, there is a separate library planned of UReact components for working with the UnityUI system.
+It turns out UI hierarchies and game scene graphs have a lot in common. They're both hierarchies of nodes thats group together related elements, which often are also spatially grouped. So a system like React that's designed to manage a UI hierarchy also works surprisingly well for managing a scene graph.
 
 # How to Install UReact
 
@@ -59,7 +53,9 @@ A `NodeElem` stores the node's unique key, it's list of components (as `CompElem
 
 The first thing UReact does each frame is build the graph of elements based on the root node you pass it. Then it analyzes that graph to figure out which `GameObject`s should be created, destroyed or moved, and then calls the `Render` function for each `CompElem` on each `Node` to update every `GameObject` that remains in the scene.
 
-The example we're going to build up involves having three cubes, of different sizes, which you can click on to drag around. Before we dive into the UReact parts of this, let's define the centralized state structure:
+The example we're going to build up involves having three cubes, of different sizes, which you can click on to drag around. Before we dive into the UReact parts of this, let's define the centralized state structure. It's generally recommended that any UReact project store the entire world state in one place. This structure may be large and complicated, but it's none the less very helpful to have it all centralized. Ideally, there's also a system for propogating updates into the state to maintain consistency, instead of just updating it directly, but that's beyond the scope of what UReact does so we'll skip that part in this example.
+
+The state we'll be using is pretty simple:
 
 ```c#
 #nullable enable
@@ -82,7 +78,9 @@ namespace State {
 
 The `Draggable` class represents one draggable object, with a size and a position. The `Store` class is the root of our state, and has a dictionary of `Draggable`s indexed by ID, and also stores the ID of the object currently being dragged, if there is one.
 
-In order to make anything actually happen, we need at least one actual `MonoBehaviour`, so we can initialize our state in `Start()`, and update it in `Update`. Something like this:
+In order to make anything actually happen, we need at least one actual `MonoBehaviour`, so we can initialize our state in `Start`, and update it in `Update`. It's recommended that you have exactly one such `MonoBehaviour` which serves as the entry point for all initialization and updates. We call this class a dispatcher, because it recieves all Unity events and dispatches them where they're needed. All per-frame updates should go through this dispatcher, rather than being handled in the scene graph. In this example, though, the updates are so simple that the dispatcher will handle them directly.
+
+Something like this:
 
 ```c#
 #nullable enable
@@ -117,93 +115,144 @@ public class UReactDispatcher : MonoBehaviour {
 }
 ```
 
-As you can see, this instantiates the state, adds three draggables to it in `Start()`, and in `Update()`, it checks if there is a draggable currently held, and if there is, it moves it to where the cursor's position intersects the ground plane.
+As you can see, this instantiates the state, adds three draggables to it in `Start`, and in `Update`, it checks if there is a draggable currently held, and if there is, it moves it to where the cursor's position intersects the ground plane.
 
-Now, we want to have a UReact node to represent a draggable object. By convention, each node is composed of two data types:
-
-* Props struct - A struct containing all of the properties the node needs. This traditionally has the suffix `Props`, like `DraggableProps`.
-* Node class - A static class with a single static method on it called `New`. This class traditionally has the `Node` suffix, like `DraggableNode`. The `New` method takes as an argument the props struct, and possibly a string key, and returns a `NodeElem`, describing a `GameObject` with it's components and children.
-
-Putting this together for our draggable object, we end up with something like this:
+By convention, a node is a static class with a single `New` function on it. That function takes any parameters it needs to construct it's portion of the scene graph, and returns a new `NodeElem`. Here's the `DraggableNode` for this example:
 
 ```c#
+#nullable enable
 #nullable enable
 using System;
 using UnityEngine;
 using UReact;
 
-public struct DraggableProps {
-  public string key;
-  public Vector3 position;
-  public float size;
-  public Material material;
-  public Mesh mesh;
-}
-
 public static class DraggableNode {
-  public static NodeElem New(DraggableProps props) =>
-    new NodeElem(
-      props.key
-    ).Component(
-      typeof(Transform),
-      TransformComponent.Render,
-      new TransformProps { position = props.position, localScale = Vector3.one * props.size }
-    ).Component(
-      typeof(MeshRenderer),
-      MeshRendererComponent.Render,
-      new MeshRendererProps { material = props.material }
-    ).Component(
-      typeof(MeshFilter),
-      MeshFilterComponent.Render,
-      new MeshFilterProps { mesh = props.mesh }
-    ).Component(
-      typeof(BoxCollider),
-      BoxColliderComponent.Render,
-      new BoxColliderProps { center = Vector3.zero, size = Vector3.one * props.size }
-    ).Component(
-      typeof(Clickable),
-      ClickableComponent.Render,
-      new ClickableProps { onClick = props.onClick }
-    );
+	public static NodeElem New(
+		string key,
+		Vector3 position,
+		float size,
+		Action onClick,
+		Material material,
+		Mesh mesh
+	) =>
+		new NodeElem(
+			key
+		).Component(
+			new TransformComponent(
+				localPosition: position,
+				localScale: Vector3.one * size)
+		).Component(
+			new MeshRendererComponent(
+				material: material
+			)
+		).Component(
+			new MeshFilterComponent(
+				mesh: mesh
+			)
+		).Component(
+			new BoxColliderComponent(
+				center: Vector3.zero,
+				size: Vector3.one * size
+			)
+		).Component(
+			new ClickableComponent(
+				onClick: onClick
+			)
+		);
 }
 ```
 
 Note that the argument passed to `new NodeElem()` must be a unique key, across the entire portion of the scene graph managed by this `UReact.Renderer`. This key is how UReact maintains the identity of the node from one frame to the next, even if it moves to a different place in the scene graph hierarchy.
 
-Now, you might be wondering why we use a props struct, instead of just passing all this data in to `New` as arguments. Well, you can do that, if you like, and it'll work fine. This reason for this convention is for consistency with components, which need to have a props structure because that structure is saved, so they can be passed the props structure from the previous frame to diff, to decide what they need to change.
-
 The UReactUnityComponents library comes with a set of UReact components representing some of the more commonly used Unity components, which is where `TransformComponent`, `MeshRendererComponent`, `MeshFilterComponent` and `BoxColliderComponent` above come from. It's by no means a complete set, and they do not provide access to the full set of properties on these components. It's guided by the set of things that are needed by the earliest consumers of the library. Contributions welcome.
+
+The `ClickableComponent` is one we have to implement ourselves for this example. It wraps a custom `MonoBehaviour` called, unsurprisingly, `Clickable`. The `Clickable` class is very simple:
+
+```c#
+#nullable enable
+using System;
+using UnityEngine;
+
+public class Clickable : MonoBehaviour {
+	public Action? onClick;
+
+	public void OnMouseUpAsButton() {
+		if (onClick != null) {
+			onClick();
+		}
+	}
+}
+```
+
+As you can see, it's just a `MonoBehavior` that stores an `Action` and calls it when it's `OnMouseUpAsButton` event is triggered. But to use this from our UReact scene graph, we need a UReact component to represent it. Hence we make the `ClickableComponent`:
+
+```c#
+#nullable enable
+using System;
+using UnityEngine;
+
+public struct ClickableComponent : UReact.Component {
+	private Action onClick;
+
+	public ClickableComponent(Action onClick) {
+		this.onClick = onClick;
+	}
+
+	public void Render(GameObject obj, UReact.Component? oldComp) {
+		if (oldComp == null) {
+			var clickable = obj.AddComponent<Clickable>();
+			clickable.onClick = onClick;
+		}
+	}
+
+	public Type[] GetManagedBehaviourTypes() {
+		return new Type[] { typeof(Clickable) };
+	}
+}
+```
+
+A UReact component must implement the `UReact.Component` interface, which includes the `Render` and `GetManagedBehaviourTypes` functions you see here. The `Render` function is where the real work happens. It's given the `GameObject` on which this component operates, and another `UReact.Component`, called `oldComp`, which is the version of the component from the previous frame. If `oldComp` is `null`, that means this is the first frame on which it's existed, and the Unity component needs to be initialized.
+
+If `oldComp` is not `null`, then we can compare the fields from last frame to the ones on this frame, and update the actual component if necessary. In this case, the only field is the `onClick`, which we won't be updating, partially because there's no useful way to compare an `Action` to another `Action`. Unless they're literally the same object, they will always compare as different, even if they're effectively identical. And since the `onClick` function will be created in the UReact scene graph, it will always be a different object.
 
 Next, we need the root node. This will manage the list of `DraggableNode`s, as so:
 
 ```c#
 #nullable enable
-using System.Linq;
 using UnityEngine;
 using UReact;
 
-public struct RootProps {
-  public State.Store state;
-  public Material material;
-  public Mesh mesh;
-}
-
 public static class RootNode {
-  public static NodeElem New(RootProps props) {
-    var root = new NodeElem("Draggable Objects");
-    foreach (var keyval in props.state.objects) {
-      var id = keyval.Key;
-      var draggable = keyval.Value;
-      root.Child(DraggableNode.New(new DraggableProps {
-        key = $"Draggable {id}",
-        position = draggable.position,
-        size = draggable.size,
-        material = props.material,
-        mesh = props.mesh,
-      }));
-    }
-    return root;
-  }
+	public static NodeElem New(State.Store state, Material material, Mesh mesh) {
+		// Create an empty node, as a parent object to organize all the draggable objects together
+		var root = new NodeElem("Draggable Objects");
+
+		// Iterate through each of the draggables in the state, to make a child node from each
+		foreach (var keyval in state.objects) {
+			var id = keyval.Key;
+			var draggable = keyval.Value;
+
+			// Use the `Child` function to add a child to the root node
+			root.Child(
+				DraggableNode.New(
+					key: $"Draggable {id}",
+					position: draggable.position,
+					size: draggable.size,
+					onClick: () => {
+						if (state.heldObject == null) {
+							state.heldObject = id;
+						} else {
+							state.heldObject = null;
+						}
+					},
+					material: material,
+					mesh: mesh
+				)
+			);
+		}
+
+		return root;
+	}
 }
 ```
 
@@ -226,24 +275,23 @@ public class UReactDispatcher : MonoBehaviour {
   public Material? draggableMaterial;
 
   private State.Store state = new State.Store();
-  private UReact.Renderer? ureact;
+  private UReact.Renderer ureact = new UReact.Renderer();
   private Mesh? cubeMesh;
 
   void Start() {
-    // clipped ... initialization state
+    // clipped ... initializing state
 
     cubeMesh = BuildCubeMesh();
-    ureact = new UReact.Renderer();
   }
 
   void Update() {
     // clipped ... updating state
 
-    ureact.Render(RootNode.New(new RootProps {
-      state = state,
-      material = draggableMaterial ?? throw new Exception("Draggable material is null"),
-      mesh = cubeMesh ?? throw new Exception("Draggable mesh is null"),
-    }));
+		ureact.Render(RootNode.New(
+			state: state,
+			material: draggableMaterial ?? throw new Exception("Draggable material is null"),
+			mesh: cubeMesh ?? throw new Exception("Draggable mesh is null")
+		));
   }
 
   private Mesh BuildCubeMesh() {
@@ -253,7 +301,7 @@ public class UReactDispatcher : MonoBehaviour {
 }
 ```
 
-Now `Start()` also creates the renderer, and the cube mesh that our draggables will use. We also added a `Material` variable to the `UReactDispatcher`, since our draggables also need a `Material` to render, and that has to come from somewhere. And the `Update()` function now calls `Render` on our renderer, passing in a new `NodeElem` from our `RootNode`.
+Now `Start()` also creates the cube mesh that our draggables will use. We also added a `Material` variable to the `UReactDispatcher`, since our draggables also need a `Material` to render, and that has to come from somewhere, and the `UReact.Renderer` is stored here as well. And the `Update()` function now calls `Render` on our renderer, passing in a new `NodeElem` from our `RootNode`.
 
 The final step is to setup the Unity scene. Make an empty scene, make sure the camera and light are positioned in a reasonable place, and then create an empty `GameObject` and put the `UReactDispatcher` on it, and set it's "Draggable Material" field to some material, probably just "Default-Material". Then hit play, and drag some cubes around!
 

@@ -2,17 +2,21 @@
 using System;
 using UnityEngine;
 
-namespace UReact {
-	public struct ClickableProps {
-		public Action onClick;
+public struct ClickableComponent : UReact.Component {
+	private Action onClick;
+
+	public ClickableComponent(Action onClick) {
+		this.onClick = onClick;
 	}
 
-	public static class ClickableComponent {
-		public static void Render(GameObject obj, ClickableProps? oldProps, ClickableProps props) {
-			if (oldProps == null) {
-				var clickable = obj.AddComponent<Clickable>();
-				clickable.onClick = props.onClick;
-			}
+	public void Render(GameObject obj, UReact.Component? oldComp) {
+		if (oldComp == null) {
+			var clickable = obj.AddComponent<Clickable>();
+			clickable.onClick = onClick;
 		}
+	}
+
+	public Type[] GetManagedBehaviourTypes() {
+		return new Type[] { typeof(Clickable) };
 	}
 }

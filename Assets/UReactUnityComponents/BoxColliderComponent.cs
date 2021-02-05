@@ -1,27 +1,33 @@
 #nullable enable
+using System;
 using UnityEngine;
 
 namespace UReact {
-	public struct BoxColliderProps {
-		public Vector3 center;
-		public Vector3 size;
-	}
+	public struct BoxColliderComponent : Component {
+		private Vector3 center;
+		private Vector3 size;
 
-	public static class BoxColliderComponent {
-		public static void Render(GameObject obj, BoxColliderProps? oldProps, BoxColliderProps props) {
-			if (oldProps == null) {
+		public BoxColliderComponent(Vector3 center, Vector3 size) {
+			this.center = center;
+			this.size = size;
+		}
+
+		public void Render(GameObject obj, Component? oldComp) {
+			if (oldComp == null) {
 				var boxCollider = obj.AddComponent<BoxCollider>();
-			} else {
-				if (!oldProps.Value.Equals(props)) {
-					var boxCollider = obj.GetComponent<BoxCollider>();
-					if (oldProps.Value.center != props.center) {
-						boxCollider.center = props.center;
-					}
-					if (oldProps.Value.size != props.size) {
-						boxCollider.size = props.size;
-					}
+			} else if (oldComp is BoxColliderComponent old && !old.Equals(this)) {
+				var boxCollider = obj.GetComponent<BoxCollider>();
+				if (old.center != center) {
+					boxCollider.center = center;
+				}
+				if (old.size != size) {
+					boxCollider.size = size;
 				}
 			}
+		}
+
+		public Type[] GetManagedBehaviourTypes() {
+			return new Type[] { typeof(BoxCollider) };
 		}
 	}
 }

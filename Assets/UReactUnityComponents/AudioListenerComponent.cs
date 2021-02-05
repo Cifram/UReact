@@ -1,15 +1,17 @@
 #nullable enable
+using System;
 using UnityEngine;
 
 namespace UReact {
-	public struct AudioListenerProps {
-	}
-
-	public static class AudioListenerComponent {
-		public static void Render(GameObject obj, AudioListenerProps? oldProps, AudioListenerProps props) {
-			if (oldProps == null) {
+	public struct AudioListenerComponent : Component {
+		public void Render(GameObject obj, Component? oldComp) {
+			if (oldComp == null) {
 				obj.AddComponent<AudioListener>();
 			}
+		}
+
+		public Type[] GetManagedBehaviourTypes() {
+			return new Type[] { typeof(AudioListenerComponent) };
 		}
 	}
 }
