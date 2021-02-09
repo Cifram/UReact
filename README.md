@@ -121,7 +121,6 @@ By convention, a node is a static class with a single `New` function on it. That
 
 ```c#
 #nullable enable
-#nullable enable
 using System;
 using UnityEngine;
 using UReact;
