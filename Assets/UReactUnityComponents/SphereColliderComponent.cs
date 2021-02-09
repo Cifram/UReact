@@ -7,21 +7,23 @@ namespace UReact {
 		private Vector3 center;
 		private float radius;
 
-		public SphereColliderComponent(Vector3? center = null, float radius = 0) {
+		public SphereColliderComponent(Vector3? center = null, float radius = 1) {
 			this.center = center ?? Vector3.zero;
 			this.radius = radius;
 		}
 
 		public void Render(GameObject obj, Component? oldComp) {
 			if (oldComp == null) {
-				var SphereCollider = obj.AddComponent<SphereCollider>();
+				var sphereCollider = obj.AddComponent<SphereCollider>();
+				sphereCollider.center = center;
+				sphereCollider.radius = radius;
 			} else if (oldComp is SphereColliderComponent old && !old.Equals(this)) {
-				var SphereCollider = obj.GetComponent<SphereCollider>();
+				var sphereCollider = obj.GetComponent<SphereCollider>();
 				if (old.center != center) {
-					SphereCollider.center = center;
+					sphereCollider.center = center;
 				}
 				if (old.radius != radius) {
-					SphereCollider.radius = radius;
+					sphereCollider.radius = radius;
 				}
 			}
 		}
