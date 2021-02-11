@@ -5,19 +5,20 @@ using UReact;
 
 public static class DraggableNode {
 	public static NodeElem New(
-		string key,
+		Guid id,
 		Vector3 position,
 		float size,
 		Action onClick,
 		Material material,
 		Mesh mesh
-	) =>
-		new NodeElem(
-			key
+	) {
+		return new NodeElem(
+			key: $"draggable {id}"
 		).Component(
 			new TransformComponent(
 				localPosition: position,
-				localScale: Vector3.one * size)
+				localScale: Vector3.one * size
+			)
 		).Component(
 			new MeshRendererComponent(
 				material: material
@@ -36,4 +37,5 @@ public static class DraggableNode {
 				onClick: onClick
 			)
 		);
+	}
 }

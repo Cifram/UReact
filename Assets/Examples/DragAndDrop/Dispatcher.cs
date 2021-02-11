@@ -2,23 +2,23 @@
 using System;
 using UnityEngine;
 
-public class UReactDispatcher : MonoBehaviour {
+public class Dispatcher : MonoBehaviour {
 	public Material? draggableMaterial;
 
-	private State.Store state = new State.Store();
+	private State state = new State();
 	private UReact.Renderer ureact = new UReact.Renderer();
 	private Mesh? cubeMesh;
 
 	void Start() {
-		state.objects[Guid.NewGuid()] = new State.Draggable() {
+		state.objects[Guid.NewGuid()] = new Draggable() {
 			position = new Vector3(0, 0, 0),
 			size = 1.5f,
 		};
-		state.objects[Guid.NewGuid()] = new State.Draggable() {
+		state.objects[Guid.NewGuid()] = new Draggable() {
 			position = new Vector3(3, 0, 0),
 			size = 2,
 		};
-		state.objects[Guid.NewGuid()] = new State.Draggable() {
+		state.objects[Guid.NewGuid()] = new Draggable() {
 			position = new Vector3(-3, 0, 0),
 			size = 1f,
 		};
@@ -43,32 +43,32 @@ public class UReactDispatcher : MonoBehaviour {
 	private Mesh BuildCubeMesh() {
 		var mesh = new Mesh();
 		mesh.vertices = new Vector3[] {
-      // top
+			// top
 			new Vector3(0.5f, 0.5f, 0.5f),
 			new Vector3(0.5f, 0.5f, -0.5f),
 			new Vector3(-0.5f, 0.5f, -0.5f),
 			new Vector3(-0.5f, 0.5f, 0.5f),
-      // bottom
+			// bottom
 			new Vector3(0.5f, -0.5f, 0.5f),
 			new Vector3(-0.5f, -0.5f, 0.5f),
 			new Vector3(-0.5f, -0.5f, -0.5f),
 			new Vector3(0.5f, -0.5f, -0.5f),
-      // left
+			// left
 			new Vector3(-0.5f, 0.5f, 0.5f),
 			new Vector3(-0.5f, 0.5f, -0.5f),
 			new Vector3(-0.5f, -0.5f, -0.5f),
 			new Vector3(-0.5f, -0.5f, 0.5f),
-      // right
+			// right
 			new Vector3(0.5f, 0.5f, 0.5f),
 			new Vector3(0.5f, -0.5f, 0.5f),
 			new Vector3(0.5f, -0.5f, -0.5f),
 			new Vector3(0.5f, 0.5f, -0.5f),
-      // front
+			// front
 			new Vector3(0.5f, 0.5f, 0.5f),
 			new Vector3(-0.5f, 0.5f, 0.5f),
 			new Vector3(-0.5f, -0.5f, 0.5f),
 			new Vector3(0.5f, -0.5f, 0.5f),
-      // back
+			// back
 			new Vector3(0.5f, 0.5f, -0.5f),
 			new Vector3(0.5f, -0.5f, -0.5f),
 			new Vector3(-0.5f, -0.5f, -0.5f),

@@ -3,7 +3,7 @@ using UnityEngine;
 using UReact;
 
 public static class RootNode {
-	public static NodeElem New(State.Store state, Material material, Mesh mesh) {
+	public static UReact.NodeElem New(State state, Material material, Mesh mesh) {
 		// Create an empty node, as a parent object to organize all the draggable objects together
 		var root = new NodeElem("Draggable Objects");
 
@@ -15,7 +15,7 @@ public static class RootNode {
 			// Use the `Child` function to add a child to the root node
 			root.Child(
 				DraggableNode.New(
-					key: $"Draggable {id}",
+					id: id,
 					position: draggable.position,
 					size: draggable.size,
 					onClick: () => {

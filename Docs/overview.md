@@ -31,26 +31,26 @@ An example of a simple node:
 
 ```c#
 public static class MyNode {
-	public static UReact.NodeElem New(int id, Vector3 position, float size, Mesh mesh, Material material) {
-		return new UReact.NodeElem(
-			key: $"MyNode-{id}"
-		).Component(
-			new UReact.TransformComponent(
-				localPosition: position,
-				localScale: Vector3.one * size
-			)
-		).Component(
-			new UReact.MeshFilter(
-				mesh: mesh
-			)
-		).Component(
-			new UReact.MeshRenderer(
-				material: material
-			)
-		).Child(
-			MyOtherNode.New(id, size)
-		);
-	}
+  public static UReact.NodeElem New(int id, Vector3 position, float size, Mesh mesh, Material material) {
+    return new UReact.NodeElem(
+      key: $"MyNode-{id}"
+    ).Component(
+      new UReact.TransformComponent(
+        localPosition: position,
+        localScale: Vector3.one * size
+      )
+    ).Component(
+      new UReact.MeshFilter(
+        mesh: mesh
+      )
+    ).Component(
+      new UReact.MeshRenderer(
+        material: material
+      )
+    ).Child(
+      MyOtherNode.New(id, size)
+    );
+  }
 }
 ```
 
@@ -69,8 +69,8 @@ Building a component is a little more complicated, but still pretty simple. You 
 
 ```c#
 public interface Component {
-	void Render(GameObject obj, Component? oldComp);
-	Type[] GetManagedBehaviourTypes();
+  void Render(GameObject obj, Component? oldComp);
+  Type[] GetManagedBehaviourTypes();
 }
 ```
 
@@ -86,33 +86,33 @@ Anyway, that out of the way, on to a simple example component:
 
 ```c#
 public struct SphereColliderComponent : Component {
-	private Vector3 center;
-	private float radius;
+  private Vector3 center;
+  private float radius;
 
-	public SphereColliderComponent(Vector3? center = null, float radius = 1) {
-		this.center = center ?? Vector3.zero;
-		this.radius = radius;
-	}
+  public SphereColliderComponent(Vector3? center = null, float radius = 1) {
+    this.center = center ?? Vector3.zero;
+    this.radius = radius;
+  }
 
-	public void Render(GameObject obj, Component? oldComp) {
-		if (oldComp == null) {
-			var sphereCollider = obj.AddComponent<SphereCollider>();
-			sphereCollider.center = center;
-			sphereCollider.radius = radius;
-		} else if (oldComp is SphereColliderComponent old && !old.Equals(this)) {
-			var sphereCollider = obj.GetComponent<SphereCollider>();
-			if (old.center != center) {
-				sphereCollider.center = center;
-			}
-			if (old.radius != radius) {
-				sphereCollider.radius = radius;
-			}
-		}
-	}
+  public void Render(GameObject obj, Component? oldComp) {
+    if (oldComp == null) {
+      var sphereCollider = obj.AddComponent<SphereCollider>();
+      sphereCollider.center = center;
+      sphereCollider.radius = radius;
+    } else if (oldComp is SphereColliderComponent old && !old.Equals(this)) {
+      var sphereCollider = obj.GetComponent<SphereCollider>();
+      if (old.center != center) {
+        sphereCollider.center = center;
+      }
+      if (old.radius != radius) {
+        sphereCollider.radius = radius;
+      }
+    }
+  }
 
-	public Type[] GetManagedBehaviourTypes() {
-		return new Type[] { typeof(SphereCollider) };
-	}
+  public Type[] GetManagedBehaviourTypes() {
+    return new Type[] { typeof(SphereCollider) };
+  }
 }
 ```
 
@@ -130,21 +130,21 @@ A simple dispatcher might look something like this:
 
 ```c#
 public class Dispatcher : MonoBehaviour {
-	private StateStore state;
-	private UReact.Renderer renderer;
+  private StateStore state;
+  private UReact.Renderer renderer;
 
-	void Start() {
-		state = new StateStore();
-		renderer = new UReact.Renderer();
-	}
+  void Start() {
+    state = new StateStore();
+    renderer = new UReact.Renderer();
+  }
 
-	void Update() {
-		state.Update();
+  void Update() {
+    state.Update();
 
-		renderer.Render(RootNode.New(
-			state: state,
-		));
-	}
+    renderer.Render(RootNode.New(
+      state: state,
+    ));
+  }
 }
 ```
 
@@ -185,3 +185,7 @@ If a UReact component is managing a Unity component, it needs to know it has tot
 In short, if you write to any component managed by a UReact component, you're breaking the UReact paradigm and asking for trouble.
 
 Note that when you write your own custom `MonoBehaviour`s with the intent of having them managed to a UReact component, those `MonoBehaviour`s can still write to themselves. Also, if they create and manage some of their own Unity components, as described above, they also have full control of those, being able to read from or write to them however they need. However, nothing ELSE should ever write to those components. This excemption applies entirely to the `MonoBehaviour` responsible for managing them.
+
+# What Next?
+
+Try out [the tutorial](tutorial.md) to see all of this in action!

@@ -13,6 +13,11 @@ public struct ClickableComponent : UReact.Component {
 		if (oldComp == null) {
 			var clickable = obj.AddComponent<Clickable>();
 			clickable.onClick = onClick;
+		} else if (oldComp is ClickableComponent old && !old.Equals(this)) {
+			var clickable = obj.GetComponent<Clickable>();
+			if (onClick != old.onClick) {
+				clickable.onClick = onClick;
+			}
 		}
 	}
 

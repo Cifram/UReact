@@ -217,7 +217,7 @@ GameObject:
   - component: {fileID: 1174950967}
   - component: {fileID: 1174950966}
   m_Layer: 0
-  m_Name: UReactDispatcher
+  m_Name: Dispatcher
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -232,10 +232,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 1174950965}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 43b4fb7675fc6e24aa5d2cc93ae13cc0, type: 3}
+  m_Script: {fileID: 11500000, guid: 95c4dffa9e7d4eb4a9a435d7061ac3b4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  draggableMaterial: {fileID: 10303, guid: 0000000000000000f000000000000000, type: 0}
+  draggableMaterial: {fileID: 10302, guid: 0000000000000000f000000000000000, type: 0}
 --- !u!4 &1174950967
 Transform:
   m_ObjectHideFlags: 0
